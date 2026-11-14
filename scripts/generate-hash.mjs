@@ -1,4 +1,7 @@
-import { createHash } from 'node:crypto'
+import { randomBytes, scrypt as scryptCallback } from 'node:crypto'
+import { promisify } from 'node:util'
+
+const scrypt = promisify(scryptCallback)
 
 const password = process.argv[2]
 
@@ -7,4 +10,7 @@ if (!password) {
   process.exit(1)
 }
 
-console.log(createHash('sha256').update(password, 'utf8').digest('hex'))
+const salt = randomBytes(16)
+const derived = await scrypt(password, salt, 64)
+
+console.log(`scrypt:${salt.toString('hex')}:${derived.toString('hex')}`)

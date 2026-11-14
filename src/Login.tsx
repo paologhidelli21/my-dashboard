@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { isAuthConfigured, login } from './auth'
+import { login } from './auth'
+import type { LoginError } from './auth'
+
+const ERROR_MESSAGES: Record<LoginError, string> = {
+  invalid_password: 'Password non corretta.',
+  rate_limited: 'Troppi tentativi. Riprova tra qualche minuto.',
+  not_configured:
+    'Password non configurata sul server. Imposta DASHBOARD_PASSWORD_HASH nel file .env (genera l\'hash con npm run generate:hash -- "la-tua-password").',
+  bad_request: 'Richiesta non valida.',
+  server_error: 'Errore del server. Riprova.',
+  network: 'Errore di rete. Riprova.',
+}
 
 interface LoginProps {
   onSuccess: () => void
@@ -11,25 +22,18 @@ export function Login({ onSuccess }: LoginProps) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const configured = isAuthConfigured()
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!password || loading) return
     setLoading(true)
     setError(null)
-    try {
-      const ok = await login(password)
-      if (ok) {
-        onSuccess()
-      } else {
-        setError('Password non corretta.')
-      }
-    } catch {
-      setError('Errore durante la verifica. Riprova.')
-    } finally {
-      setLoading(false)
-      setPassword('')
+    const result = await login(password)
+    setLoading(false)
+    setPassword('')
+    if (result.ok) {
+      onSuccess()
+    } else {
+      setError(ERROR_MESSAGES[result.error ?? 'network'])
     }
   }
 
@@ -38,30 +42,20 @@ export function Login({ onSuccess }: LoginProps) {
       <form className="card login-card" onSubmit={handleSubmit}>
         <h1>My Dashboard</h1>
         <p className="subtitle">Area personale — accesso riservato</p>
-        {configured ? (
-          <>
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Inserisci la password"
-              autoFocus
-              autoComplete="current-password"
-            />
-            {error && <p className="error" role="alert">{error}</p>}
-            <button type="submit" disabled={loading || !password}>
-              {loading ? 'Verifica…' : 'Entra'}
-            </button>
-          </>
-        ) : (
-          <p className="error" role="alert">
-            Password non configurata. Copia <code>.env.example</code> in <code>.env</code> e imposta{' '}
-            <code>VITE_DASHBOARD_PASSWORD_HASH</code> (generalo con{' '}
-            <code>npm run generate:hash -- "la-tua-password"</code>).
-          </p>
-        )}
+        <label htmlFor="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Inserisci la password"
+          autoFocus
+          autoComplete="current-password"
+        />
+        {error && <p className="error" role="alert">{error}</p>}
+        <button type="submit" disabled={loading || !password}>
+          {loading ? 'Verifica…' : 'Entra'}
+        </button>
       </form>
     </main>
   )

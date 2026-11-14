@@ -1,30 +1,42 @@
-const SESSION_KEY = 'my-dashboard-session'
+export type LoginError =
+  | 'invalid_password'
+  | 'rate_limited'
+  | 'not_configured'
+  | 'bad_request'
+  | 'server_error'
+  | 'network'
 
-const PASSWORD_HASH = import.meta.env.VITE_DASHBOARD_PASSWORD_HASH as string | undefined
-
-export function isAuthConfigured(): boolean {
-  return Boolean(PASSWORD_HASH)
+export interface LoginResult {
+  ok: boolean
+  error?: LoginError
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')
+export async function login(password: string): Promise<LoginResult> {
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+    if (res.ok) return { ok: true }
+    const body = (await res.json().catch(() => ({}))) as { error?: LoginError }
+    return { ok: false, error: body.error ?? 'network' }
+  } catch {
+    return { ok: false, error: 'network' }
+  }
 }
 
-export async function login(password: string): Promise<boolean> {
-  if (!PASSWORD_HASH) return false
-  const hash = await hashPassword(password)
-  if (hash !== PASSWORD_HASH) return false
-  sessionStorage.setItem(SESSION_KEY, hash)
-  return true
+export async function checkSession(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/session')
+    if (!res.ok) return false
+    const body = (await res.json()) as { authenticated?: boolean }
+    return Boolean(body.authenticated)
+  } catch {
+    return false
+  }
 }
 
-export function isLoggedIn(): boolean {
-  return Boolean(PASSWORD_HASH) && sessionStorage.getItem(SESSION_KEY) === PASSWORD_HASH
-}
-
-export function logout(): void {
-  sessionStorage.removeItem(SESSION_KEY)
+export async function logout(): Promise<void> {
+  await fetch('/api/logout', { method: 'POST' }).catch(() => undefined)
 }
