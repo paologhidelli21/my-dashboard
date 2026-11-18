@@ -1,7 +1,14 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import process from 'node:process'
 import express from 'express'
 import type { NextFunction, Request, Response } from 'express'
+
+try {
+  process.loadEnvFile()
+} catch {
+  // .env assente o non leggibile: si procede con le variabili d'ambiente esistenti
+}
 import {
   SESSION_COOKIE,
   SESSION_TTL_SECONDS,
@@ -16,7 +23,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, '..', 'dist')
 
 const PORT = Number(process.env.PORT ?? 8787)
-const PASSWORD_HASH = process.env.DASHBOARD_PASSWORD_HASH
+const PASSWORD_HASH = process.env.DASHBOARD_PASSWORD_HASH?.trim()
 const COOKIE_SECURE = process.env.COOKIE_SECURE
   ? process.env.COOKIE_SECURE !== '0'
   : process.env.NODE_ENV === 'production'
