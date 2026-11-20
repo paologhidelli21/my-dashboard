@@ -156,9 +156,12 @@ app.listen(PORT, () => {
         'Genera l\'hash con "npm run generate:hash -- \\"la-tua-password\\"" e inseriscilo nel file .env',
     )
   } else if (!verifyPasswordFormat(PASSWORD_HASH)) {
+    const parts = PASSWORD_HASH.split(':')
     console.warn(
-      'DASHBOARD_PASSWORD_HASH ha un formato non valido: il login è disabilitato. ' +
-        'Formato atteso: scrypt:salt:hash (due blocchi esadecimali separati da due punti). ' +
+      `DASHBOARD_PASSWORD_HASH ha un formato non valido (prefisso "scrypt:": ${parts[0] === 'scrypt'}, ` +
+        `blocchi: ${parts.length}, lunghezza salt: ${parts[1]?.length ?? 0}, lunghezza hash: ${parts[2]?.length ?? 0}). ` +
+        'Il login è disabilitato. Formato atteso: scrypt:salt:hash. ' +
+        'Diagnostica completa: "npm run check:env". ' +
         'Rigenera con "npm run generate:hash -- \\"la-tua-password\\"" e incolla l\'INTERA riga di output, ' +
         'che inizia con "scrypt:".',
     )

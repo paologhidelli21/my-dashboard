@@ -16,6 +16,13 @@ Genera l'hash della tua password e incollalo in `.env`:
 npm run generate:hash -- "la-tua-password"
 ```
 
+Incolla nel `.env` **l'intera riga di output** (inizia con `scrypt:` e contiene due
+punti). Puoi verificare che il formato sia corretto con:
+
+```bash
+npm run check:env
+```
+
 Poi avvia l'ambiente di sviluppo (server API + frontend insieme):
 
 ```bash
