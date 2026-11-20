@@ -150,10 +150,17 @@ app.use((req: Request, res: Response) => {
 
 app.listen(PORT, () => {
   console.log(`my-dashboard server in ascolto su http://localhost:${PORT}`)
-  if (!PASSWORD_HASH || !verifyPasswordFormat(PASSWORD_HASH)) {
+  if (!PASSWORD_HASH) {
     console.warn(
       'DASHBOARD_PASSWORD_HASH non configurato: il login è disabilitato. ' +
         'Genera l\'hash con "npm run generate:hash -- \\"la-tua-password\\"" e inseriscilo nel file .env',
+    )
+  } else if (!verifyPasswordFormat(PASSWORD_HASH)) {
+    console.warn(
+      'DASHBOARD_PASSWORD_HASH ha un formato non valido: il login è disabilitato. ' +
+        'Formato atteso: scrypt:salt:hash (due blocchi esadecimali separati da due punti). ' +
+        'Rigenera con "npm run generate:hash -- \\"la-tua-password\\"" e incolla l\'INTERA riga di output, ' +
+        'che inizia con "scrypt:".',
     )
   }
 })
